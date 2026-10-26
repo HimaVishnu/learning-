@@ -72,19 +72,22 @@ export class BookStorePage {
   }
 
   async getBooks() {
-    const books = [];
-    for (const row of await this.bookRows.all()) {
-      const cells = row.getByRole('cell').or(row.locator('.rt-td'));
-      const href = await row.getByRole('link').getAttribute('href');
-      const url = new URL(href, this.page.url());
-      books.push({
+    // Read one consistent page snapshot in a single browser operation. Reading
+    // every cell separately can exhaust expect.poll's deadline on slower runners.
+    return this.bookRows.evaluateAll(rows => rows.map(row => {
+      const cells = row.querySelectorAll('td, [role="cell"], .rt-td');
+      const link = row.querySelector('a[href], [role="link"][href]');
+      if (cells.length < 4 || !link) {
+        throw new Error('Cannot read catalogue row: expected a book link and four cells');
+      }
+      const url = new URL(link.getAttribute('href'), row.ownerDocument.baseURI);
+      return {
         isbn: url.searchParams.get('search') ?? url.searchParams.get('book'),
-        title: (await cells.nth(1).innerText()).trim(),
-        author: (await cells.nth(2).innerText()).trim(),
-        publisher: (await cells.nth(3).innerText()).trim(),
-      });
-    }
-    return books;
+        title: cells[1].innerText.trim(),
+        author: cells[2].innerText.trim(),
+        publisher: cells[3].innerText.trim(),
+      };
+    }));
   }
 
   async changePage(button) {
