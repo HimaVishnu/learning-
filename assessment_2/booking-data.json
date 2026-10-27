@@ -1,0 +1,20 @@
+[
+  {
+    "dataFirstName": "QAOne",
+    "dataLastName": "Assessment",
+    "dataPrice": 150,
+    "dataDepositPaid": true,
+    "dataCheckin": "2027-02-10",
+    "dataCheckout": "2027-02-12",
+    "dataNeeds": "Breakfast"
+  },
+  {
+    "dataFirstName": "QATwo",
+    "dataLastName": "Assessment",
+    "dataPrice": 220,
+    "dataDepositPaid": false,
+    "dataCheckin": "2027-03-10",
+    "dataCheckout": "2027-03-13",
+    "dataNeeds": "Parking"
+  }
+]

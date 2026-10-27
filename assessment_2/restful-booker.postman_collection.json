@@ -1,0 +1,1622 @@
+{
+  "info": {
+    "_postman_id": "b08911cd-ecd5-4f54-b631-4fc04b784fc6",
+    "name": "Restful Booker- QA Assessment",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Two JSON-data iterations. Creates and mutates only its own booking. Positive writes use documented Basic Auth. Health <500ms is a chosen budget, not a documented SLA. Date-filter assertions are preserved separately in restful-booker-date-filters.investigation.postman_collection.json. See assessment_2/README.md."
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "['baseUrl', 'username', 'password'].forEach(function (key) { pm.variables.set(key, pm.collectionVariables.get(key)); });"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://restful-booker.herokuapp.com",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "password123",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ownedBookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ownedIteration",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "runMarker",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ownedRunMarker",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "submittedBooking",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "expectedBooking",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingFirstName",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingLastName",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingCheckin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingCheckout",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Health",
+      "item": [
+        {
+          "id": "8a238b20-922b-48a7-8de9-0436edd8b453",
+          "name": "Health",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const keys = [\"token\",\"bookingId\",\"ownedBookingId\",\"ownedIteration\",\"runMarker\",\"ownedRunMarker\",\"submittedBooking\",\"expectedBooking\",\"bookingFirstName\",\"bookingLastName\",\"bookingCheckin\",\"bookingCheckout\"];",
+                  "if (pm.collectionVariables.get('ownedBookingId')) {",
+                  "  pm.test('Previous iteration completed cleanup', function () { throw new Error('An owned booking remains; investigate the previous cleanup before creating another.'); });",
+                  "  pm.execution.skipRequest();",
+                  "  pm.execution.setNextRequest(null);",
+                  "} else {",
+                  "  keys.forEach(function (key) { pm.collectionVariables.set(key, ''); pm.variables.unset(key); });",
+                  "  pm.collectionVariables.set('runMarker', pm.variables.replaceIn('{{$guid}}'));",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Health returns HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Health response is below the chosen 500ms budget (not an SLA)', function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ping",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ping"
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Authentication",
+      "item": [
+        {
+          "id": "4c29f822-ec25-4ad9-80df-23bc8b8fa712",
+          "name": "Authenticate",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('token', '');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Authentication returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Successful authentication returns a usable token', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const token = pm.response.json().token;",
+                  "  pm.expect(token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(token.trim()).not.to.equal('');",
+                  "  pm.collectionVariables.set('token', token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{username}}\",\"password\":\"{{password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "id": "81cb71a0-f2e6-4e1a-80ec-22736c53482d",
+          "name": "Invalid authentication",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Invalid login returns HTTP 200 with Bad credentials', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.deep.equal({ reason: 'Bad credentials' });",
+                  "});",
+                  "pm.test('Invalid login does not issue a token', function () {",
+                  "  pm.expect(pm.response.json()).not.to.have.property('token');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"admin\",\"password\":\"definitely-not-password123\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Create and retrieve",
+      "item": [
+        {
+          "id": "76f1098c-c961-4966-a11d-f352052b1509",
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  try {",
+                  "    const data = pm.iterationData.toObject();",
+                  "    ['dataFirstName', 'dataLastName', 'dataCheckin', 'dataCheckout', 'dataNeeds'].forEach(function (key) {",
+                  "      pm.expect(data[key], key).to.be.a('string').and.not.empty;",
+                  "    });",
+                  "    pm.expect(data.dataPrice, 'dataPrice must be a JSON number').to.be.a('number');",
+                  "    pm.expect(Number.isFinite(data.dataPrice) && data.dataPrice >= 0).to.equal(true);",
+                  "    pm.expect(data.dataDepositPaid, 'dataDepositPaid must be a JSON boolean').to.be.a('boolean');",
+                  "    [data.dataCheckin, data.dataCheckout].forEach(function (value) {",
+                  "      pm.expect(value).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+                  "      pm.expect(new Date(value).toISOString().slice(0, 10)).to.equal(value);",
+                  "    });",
+                  "    pm.expect(data.dataCheckin < data.dataCheckout, 'checkin precedes checkout').to.equal(true);",
+                  "    const booking = {",
+                  "      firstname: data.dataFirstName, lastname: data.dataLastName,",
+                  "      totalprice: data.dataPrice, depositpaid: data.dataDepositPaid,",
+                  "      bookingdates: { checkin: data.dataCheckin, checkout: data.dataCheckout },",
+                  "      additionalneeds: data.dataNeeds",
+                  "    };",
+                  "    const submitted = JSON.stringify(booking);",
+                  "    pm.variables.set('createBookingPayload', submitted);",
+                  "    pm.collectionVariables.set('submittedBooking', submitted);",
+                  "    pm.collectionVariables.set('expectedBooking', submitted);",
+                  "    pm.collectionVariables.set('bookingFirstName', booking.firstname);",
+                  "    pm.collectionVariables.set('bookingLastName', booking.lastname);",
+                  "    pm.collectionVariables.set('bookingCheckin', booking.bookingdates.checkin);",
+                  "    pm.collectionVariables.set('bookingCheckout', booking.bookingdates.checkout);",
+                  "    pm.test('Iteration data has the required JSON types and valid dates', function () { pm.expect(true).to.equal(true); });",
+                  "  } catch (error) {",
+                  "    pm.test('Iteration data has the required JSON types and valid dates', function () { throw error; });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create Booking returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Capture the positive integer booking ID from this creation response', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const id = pm.response.json().bookingid;",
+                  "  pm.expect(Number.isInteger(id) && id > 0).to.equal(true);",
+                  "  pm.collectionVariables.set('bookingId', id);",
+                  "  pm.collectionVariables.set('ownedBookingId', id);",
+                  "  pm.collectionVariables.set('ownedIteration', String(pm.info.iteration));",
+                  "  pm.collectionVariables.set('ownedRunMarker', pm.collectionVariables.get('runMarker'));",
+                  "});",
+                  "pm.test('Created booking equals the independently saved submitted iteration data', function () {",
+                  "  pm.expect(pm.response.json().booking).to.deep.equal(JSON.parse(pm.collectionVariables.get('submittedBooking')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{createBookingPayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "id": "c2412f41-0d55-4c79-9a20-f20364845a0d",
+          "name": "Retrieve created booking",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Retrieval returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Retrieved booking equals saved expectedBooking', function () {",
+                  "  pm.expect(pm.response.json()).to.deep.equal(JSON.parse(pm.collectionVariables.get('expectedBooking')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Booking ID searches",
+      "item": [
+        {
+          "id": "abc9430f-2413-4d3a-8fd0-45755269f25b",
+          "name": "Get all booking IDs",
+          "event": [],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking"
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "id": "5f792027-8566-42e1-9a08-34b8303df250",
+          "name": "Filter booking IDs by name",
+          "event": [],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking?firstname={{bookingFirstName}}&lastname={{bookingLastName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking"
+              ],
+              "query": [
+                {
+                  "key": "firstname",
+                  "value": "{{bookingFirstName}}"
+                },
+                {
+                  "key": "lastname",
+                  "value": "{{bookingLastName}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Booking ID search returns HTTP 200', function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test('Response is an array of positive integer booking IDs', function () {\r\n    const bookings = pm.response.json();\r\n\r\n    pm.expect(bookings).to.be.an('array');\r\n\r\n    bookings.forEach(function (booking) {\r\n        pm.expect(Number.isInteger(booking.bookingid)).to.equal(true);\r\n        pm.expect(booking.bookingid).to.be.above(0);\r\n    });\r\n});\r\n\r\npm.test('Booking IDs are unique within this response', function () {\r\n    const bookings = pm.response.json();\r\n    const ids = bookings.map(function (booking) {\r\n        return booking.bookingid;\r\n    });\r\n\r\n    pm.expect(new Set(ids).size).to.equal(ids.length);\r\n});\r\n\r\npm.test('Results include the booking created by this workflow', function () {\r\n    const ownBookingId = Number(\r\n        pm.collectionVariables.get('bookingId')\r\n    );\r\n\r\n    pm.expect(\r\n        Number.isInteger(ownBookingId) && ownBookingId > 0,\r\n        'Run Create Booking successfully before these searches'\r\n    ).to.equal(true);\r\n\r\n    const bookings = pm.response.json();\r\n    const ids = bookings.map(function (booking) {\r\n        return booking.bookingid;\r\n    });\r\n\r\n    pm.expect(ids).to.include(ownBookingId);\r\n});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Full update",
+      "item": [
+        {
+          "id": "fe3baf9b-4c5d-4114-b066-c3095bd0a07e",
+          "name": "PUT Booking",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();",
+                  "",
+                  "const replacement = JSON.parse(pm.collectionVariables.get('expectedBooking'));",
+                  "replacement.firstname += 'Updated';",
+                  "replacement.totalprice += 25;",
+                  "replacement.depositpaid = !replacement.depositpaid;",
+                  "replacement.additionalneeds += ' and parking';",
+                  "pm.variables.set('updatePayload', JSON.stringify(replacement));",
+                  "pm.variables.set('pendingExpectedBooking', JSON.stringify(replacement));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Update returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "// Persist the independently computed intended state, never the server echo.",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('expectedBooking', pm.variables.get('pendingExpectedBooking'));",
+                  "pm.test('Update response equals the independently computed intended state', function () {",
+                  "  pm.expect(pm.response.json()).to.deep.equal(JSON.parse(pm.variables.get('pendingExpectedBooking')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{updatePayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "id": "e75ef281-3407-4945-bfe9-6c0adf79aaed",
+          "name": "Verify PUT persisted",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Retrieval returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Retrieved booking equals saved expectedBooking', function () {",
+                  "  pm.expect(pm.response.json()).to.deep.equal(JSON.parse(pm.collectionVariables.get('expectedBooking')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Partial update",
+      "item": [
+        {
+          "id": "74f75a67-1231-4014-aac6-8e6713163e66",
+          "name": "PATCH Booking",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();",
+                  "",
+                  "const before = JSON.parse(pm.collectionVariables.get('expectedBooking'));",
+                  "const changes = { totalprice: before.totalprice + 15, additionalneeds: before.additionalneeds + '; late checkout' };",
+                  "pm.variables.set('patchPayload', JSON.stringify(changes));",
+                  "pm.variables.set('pendingExpectedBooking', JSON.stringify(Object.assign({}, before, changes)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Update returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "// Persist the independently computed intended state, never the server echo.",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('expectedBooking', pm.variables.get('pendingExpectedBooking'));",
+                  "pm.test('Update response equals the independently computed intended state', function () {",
+                  "  pm.expect(pm.response.json()).to.deep.equal(JSON.parse(pm.variables.get('pendingExpectedBooking')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{patchPayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "id": "44c6e377-db80-474f-bdcc-c6432aad9ae4",
+          "name": "Verify PATCH persisted",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Retrieval returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Retrieved booking equals saved expectedBooking', function () {",
+                  "  pm.expect(pm.response.json()).to.deep.equal(JSON.parse(pm.collectionVariables.get('expectedBooking')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Rejected PATCH requests",
+      "item": [
+        {
+          "id": "337c9ec0-0392-4765-84dc-b5ea2a73e19a",
+          "name": "PATCH with invalid Basic authentication",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();",
+                  "",
+                  "const baseline = pm.collectionVariables.get('expectedBooking');",
+                  "pm.variables.set('rejectedPatchBaseline', baseline);",
+                  "pm.variables.set('rejectedPatchPayload', JSON.stringify({ firstname: 'UnauthorizedChange', totalprice: JSON.parse(baseline).totalprice + 999 }));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Unauthorised PATCH returns HTTP 403', function () { pm.response.to.have.status(403); });",
+                  "pm.test('Rejected PATCH does not change the independent expectation', function () {",
+                  "  pm.expect(pm.collectionVariables.get('expectedBooking')).to.equal(pm.variables.get('rejectedPatchBaseline'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "invalid-assessment-user",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "invalid-assessment-password",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{rejectedPatchPayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "id": "38d5b1b8-a739-4387-a417-686362b6b497",
+          "name": "Verify invalid Basic PATCH left data unchanged",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Retrieval returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Retrieved booking equals saved expectedBooking', function () {",
+                  "  pm.expect(pm.response.json()).to.deep.equal(JSON.parse(pm.collectionVariables.get('expectedBooking')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "id": "468a1dfe-f051-4e98-8daf-2a60a5df78b4",
+          "name": "PATCH with invalid token",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();",
+                  "",
+                  "const baseline = pm.collectionVariables.get('expectedBooking');",
+                  "pm.variables.set('rejectedPatchBaseline', baseline);",
+                  "pm.variables.set('rejectedPatchPayload', JSON.stringify({ firstname: 'UnauthorizedChange', totalprice: JSON.parse(baseline).totalprice + 999 }));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Unauthorised PATCH returns HTTP 403', function () { pm.response.to.have.status(403); });",
+                  "pm.test('Rejected PATCH does not change the independent expectation', function () {",
+                  "  pm.expect(pm.collectionVariables.get('expectedBooking')).to.equal(pm.variables.get('rejectedPatchBaseline'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "token=invalid-assessment-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{rejectedPatchPayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "id": "afe58eda-5c5b-4b00-9a6a-1daad7b7c1fd",
+          "name": "Verify invalid token PATCH left data unchanged",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Retrieval returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Retrieved booking equals saved expectedBooking', function () {",
+                  "  pm.expect(pm.response.json()).to.deep.equal(JSON.parse(pm.collectionVariables.get('expectedBooking')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Delete and verify",
+      "item": [
+        {
+          "id": "254516e0-8983-48de-b3fb-1049e80541b6",
+          "name": "DELETE Booking",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('DELETE returns HTTP 201', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "id": "aed15ba6-8cd4-4e25-9925-4042d2d260b1",
+          "name": "Verify deleted booking returns 404",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  function block(message) {",
+                  "    pm.test('Safety prerequisite: use only the booking created in this iteration', function () {",
+                  "      throw new Error(message);",
+                  "    });",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  const id = Number(pm.collectionVariables.get('ownedBookingId'));",
+                  "  if (!Number.isInteger(id) || id <= 0 ||",
+                  "      String(pm.collectionVariables.get('ownedIteration')) !== String(pm.info.iteration) ||",
+                  "      !pm.collectionVariables.get('runMarker') ||",
+                  "      pm.collectionVariables.get('ownedRunMarker') !== pm.collectionVariables.get('runMarker') ||",
+                  "      String(pm.collectionVariables.get('bookingId')) !== String(id)) {",
+                  "    block('No trusted Create Booking response exists for this iteration. Refusing a booking-ID request.');",
+                  "    return;",
+                  "  }",
+                  "  // Local scope wins over stale environment or iteration-data bookingId values.",
+                  "  pm.variables.set('bookingId', String(id));",
+                  "  if (!['PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) return;",
+                  "  let expected;",
+                  "  try { expected = JSON.parse(pm.collectionVariables.get('expectedBooking')); }",
+                  "  catch (error) { block('Missing independent expectedBooking: ' + error.message); return; }",
+                  "  // Fail closed if a reset, concurrent edit, or ID reuse changed the record.",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/booking/' + id,",
+                  "    method: 'GET', header: { Accept: 'application/json' }",
+                  "  }, function (error, response) {",
+                  "    try {",
+                  "      if (error) throw error;",
+                  "      pm.expect(response.code, 'Ownership check GET status').to.equal(200);",
+                  "      pm.expect(response.json(), 'Record must still equal our saved state').to.deep.equal(expected);",
+                  "      pm.test('Safety: mutation targets the unchanged booking created in this iteration', function () {",
+                  "        pm.expect(response.code).to.equal(200);",
+                  "      });",
+                  "    } catch (error) { block('Refusing mutation: ' + error.message); }",
+                  "  });",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET after deletion returns HTTP 404', function () { pm.response.to.have.status(404); });",
+                  "if (pm.response.code === 404) {",
+                  "  [\"token\",\"bookingId\",\"ownedBookingId\",\"ownedIteration\",\"runMarker\",\"ownedRunMarker\",\"submittedBooking\",\"expectedBooking\",\"bookingFirstName\",\"bookingLastName\",\"bookingCheckin\",\"bookingCheckout\"].forEach(function (key) { pm.collectionVariables.set(key, ''); pm.variables.unset(key); });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingId}}"
+              ]
+            }
+          },
+          "response": [],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    }
+  ]
+}

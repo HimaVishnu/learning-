@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-27",
+  "timezone": "Australia/Sydney",
+  "runner": "newman@6.2.3",
+  "dataFile": "assessment_2/booking-data.json",
+  "main": {
+    "command": "npx --yes newman@6.2.3 run assessment_2/restful-booker.postman_collection.json -d assessment_2/booking-data.json",
+    "iterations": 2,
+    "listedRequests": 34,
+    "safetyGetRequests": 10,
+    "requestsExecuted": 44,
+    "requestFailures": 0,
+    "scriptFailures": 0,
+    "assertionsExecuted": 86,
+    "assertionsPassed": 85,
+    "assertionsFailed": 1,
+    "exitCode": 1,
+    "durationSeconds": 16.7,
+    "failures": [
+      {
+        "iteration": 1,
+        "request": "Health",
+        "assertion": "Response time must be below the chosen 500ms budget, not a documented SLA",
+        "actualMilliseconds": 2358
+      }
+    ],
+    "createdBookingsDeletedAndVerified404": 2
+  },
+  "dateFilterInvestigation": {
+    "command": "npx --yes newman@6.2.3 run assessment_2/restful-booker-date-filters.investigation.postman_collection.json -d assessment_2/booking-data.json",
+    "iterations": 2,
+    "listedRequests": 16,
+    "safetyGetRequests": 2,
+    "requestsExecuted": 18,
+    "requestFailures": 0,
+    "scriptFailures": 0,
+    "assertionsExecuted": 42,
+    "assertionsPassed": 39,
+    "assertionsFailed": 3,
+    "exitCode": 1,
+    "durationSeconds": 6.2,
+    "failures": [
+      { "iteration": 1, "request": "Health", "actualMilliseconds": 814, "chosenBudgetMilliseconds": 500 },
+      { "iteration": 1, "request": "Filter booking IDs by dates", "issue": "Exact-boundary query returned an empty array instead of including the newly created booking" },
+      { "iteration": 2, "request": "Filter booking IDs by dates", "issue": "Exact-boundary query returned an empty array instead of including the newly created booking" }
+    ],
+    "createdBookingsDeletedAndVerified404": 2,
+    "status": "Date-filter contract discrepancy remains unresolved; assertions preserved"
+  },
+  "offlineValidation": {
+    "collections": 2,
+    "compiledScripts": 45,
+    "dataRows": 2,
+    "status": "passed"
+  },
+  "localMockOnly": {
+    "iterations": 2,
+    "assertionsPassed": 86,
+    "assertionsFailed": 0,
+    "createdBookingsDeleted": 2,
+    "unrelatedSeededBookingUnchanged": true,
+    "staleDataAndEnvironmentIdsDidNotOverrideOwnedId": true
+  }
+}

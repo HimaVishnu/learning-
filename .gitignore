@@ -3,3 +3,8 @@ playwright-report/
 test-results/
 blob-report/
 .env
+
+# Assessment 2: original exports and runtime reports stay local.
+/assessment_2/.backups/
+/assessment_2/reports/
+/assessment_2/run-results.json
